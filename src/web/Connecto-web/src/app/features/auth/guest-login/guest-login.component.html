@@ -14,8 +14,7 @@
         <div class="form-container">
             <h3>Username</h3>
             <form [formGroup]="form" (ngSubmit)="startChat()">
-                <input type="text" formControlName="username" placeholder="Enter your username" aria-label="Username"
-                    [ngClass]="{'error': form.get('username')?.invalid && (form.get('username')?.touched || form.get('username')?.dirty)}" />
+                <input type="text" formControlName="username" placeholder="Enter your username" aria-label="Username" />
                 <button type="submit" [disabled]="form.invalid">Chat</button>
             </form>
         </div>

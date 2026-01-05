@@ -1,0 +1,273 @@
+<div class="page-container">
+    <!-- Left panel with background -->
+    <div class="left-panel glass-panel">
+        <div class="chat-info">
+            <div class="brand">
+                <h1>Random Chat</h1>
+                <div class="brand-line"></div>
+            </div>
+            <p class="subtitle">Connect with strangers around the globe.</p>
+
+            <div class="status-container">
+
+                <!-- Connected State -->
+                @if (currentState == 'chatting' && (chatService.sessionUpdates$ | async); as session) {
+                    <div class="status-card active-state">
+                        <div class="status-icon pulse-green">
+                            <i class="fa-solid fa-user-check"></i>
+                        </div>
+                        <div class="status-text">
+                            <span class="label">Status</span>
+                            <span class="value">Connected</span>
+                        </div>
+                        <div class="partner-name" [title]="pairedUser?.name">
+                            {{ (pairedUser?.name?.length || 0) > 10 ? (pairedUser?.name | slice:0:10) + '...' :
+                            pairedUser?.name }}
+                        </div>
+                    </div>
+                }
+
+                <!-- Ended State -->
+                @if (currentState == 'ended') {
+                    <div class="status-card ended-state">
+                        <div class="status-icon">
+                            <i class="fa-solid fa-user-slash"></i>
+                        </div>
+                        <div class="status-text">
+                            <span class="label">Status</span>
+                            <span class="value">Chat Ended</span>
+                        </div>
+                    </div>
+                }
+
+                <!-- Searching State -->
+                @if (currentState != 'ended' && currentState != 'chatting') {
+                    <div class="status-card searching-state">
+                        <div class="radar-spinner">
+                            <div class="radar-wave"></div>
+                            <i class="fa-solid fa-satellite-dish"></i>
+                        </div>
+                        <div class="status-text">
+                            <span class="label">Status</span>
+                            <span class="value">{{ (chatService.waiting$ | async) ?? 'Searching for partner...' }}</span>
+                        </div>
+                    </div>
+                }
+
+                <div class="actions-grid">
+
+                    <button>
+                        <div class="status-card action-tile">
+                            <span>Online Users: {{activeUserCount}}</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right panel with chat -->
+    <div class="right-panel">
+        <div class="chat-container glass-container">
+            <div class="chat-header">
+                <div class="header-status">
+                    <div class="status-dot"
+                        [ngClass]="{'online': currentState === 'chatting', 'busy': currentState === 'searching', 'offline': currentState === 'ended'}">
+                    </div>
+                    <div class="header-details">
+                        @if (currentState == 'chatting') {
+                            <span class="header-title" [title]="pairedUser?.name">
+                                {{ (pairedUser?.name?.length || 0) > 10 ? (pairedUser?.name | slice:0:10) + '...' :
+                                pairedUser?.name }}
+                            </span>
+                        }
+                        @if (currentState == 'chatting') {
+                            <span class="header-subtitle">Online</span>
+                        }
+
+                        @if (currentState == 'ended') {
+                            <span class="header-title">Disconnected</span>
+                        }
+
+                        @if (currentState != 'ended' && currentState != 'chatting') {
+                            <span class="header-title">Searching...</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="header-actions">
+                    @if (currentState === 'chatting') {
+                        <button class="glass-btn icon-only" (click)="toggleCall()"
+                            [ngClass]="(callService.callState$ | async) === 'idle' ? 'call-start' : 'call-end'"
+                            title="Voice Call">
+                            <i class="fa-solid"
+                                [ngClass]="(callService.callState$ | async) === 'idle' ? 'fa-phone' : 'fa-phone-slash'"></i>
+                        </button>
+                    }
+
+                    <button class="glass-btn icon-only" (click)="changeUsername()" title="Change Name">
+                        <i class="fa-solid fa-user-pen"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat Messages -->
+            <div class="chat-body" #chatBody>
+
+                <!-- Incoming Call Banner -->
+                @if ((callService.callState$ | async) === 'incoming') {
+                    <div class="call-banner">
+                        <div class="avatar-ring">
+                            <i class="fa-solid fa-phone-volume"></i>
+                        </div>
+                        <div class="call-info">
+                            <span class="caller-name" [title]="pairedUser?.name">
+                                {{ (pairedUser?.name?.length || 0) > 10 ? (pairedUser?.name | slice:0:10) + '...' :
+                                pairedUser?.name }}
+                            </span>
+                            <span class="call-status">Incoming Audio Call...</span>
+                        </div>
+                        <div class="call-actions">
+                            <button class="call-btn reject" (click)="rejectCall()"><i
+                                    class="fa-solid fa-xmark"></i></button>
+                            <button class="call-btn accept" (click)="acceptCall()"><i
+                                    class="fa-solid fa-check"></i></button>
+                        </div>
+                    </div>
+                }
+
+                <!-- Messages Loop -->
+                @for (msg of messages; track $index) {
+                    <div class="msg-wrapper"
+                        [ngClass]="{'me': msg.userId === myUser?.id, 'other': msg.userId === pairedUser?.id, 'system': msg.system}">
+
+                        <!-- System Message -->
+                        @if (msg.system && !msg.voice) {
+                            <div class="system-msg">
+                                <span class="sys-badge">{{ msg.text }}</span>
+                            </div>
+                        }
+
+                        <!-- User Message -->
+                        @if (!msg.system) {
+                        <div class="message-content">
+
+                            @if (msg.userId !== myUser?.id) {
+                                <div class="avatar">
+                                    {{ msg.from?.[0] || '?' }}
+                                </div>
+                            }
+
+                            <!-- Text -->
+                            @if (!msg.voice && !msg.image) {
+                                <div class="bubble text-bubble">
+                                    <p>{{ msg.text }}</p>
+                                    <span class="timestamp">{{ msg.time | date : 'h:mm a' }}</span>
+                                </div>
+                            }
+
+                            <!-- Voice -->
+                            @if (msg.voice) {
+                                <div class="bubble voice-bubble">
+                                    <!-- <div class="voice-icon"><i class="fa-solid fa-microphone-lines"></i></div> -->
+                                    <audio controls [src]="msg.audioUrl"></audio>
+                                </div>
+                            }
+
+                            <!-- Image -->
+                            @if (msg.image) {
+                                <div class="bubble image-bubble" (click)="openImage(msg.imageUrl)">
+                                    <img [src]="msg.imageUrl" alt="shared" />
+                                </div>
+                            }
+
+                            @if ((callService.callState$ | async) !== 'idle') {
+                                <div class="call-audio-hidden">
+                                    <audio #localAudio autoplay muted></audio>
+                                    <audio #remoteAudio autoplay></audio>
+                                </div>
+                            }
+                        </div>
+                        }
+                    </div>
+                }
+
+                <!-- Typing Indicator (Inside Chat Body) -->
+                @if (isTyping) {
+                    <div class="typing-container">
+                        <div class="avatar">
+                            {{ pairedUser?.name?.[0] || '?' }}
+                        </div>
+                        <div class="typing-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                    </div>
+                }
+            </div>
+
+
+            <!-- Image Viewer Modal -->
+            @if (enlargedImageUrl) {
+                <div class="fullscreen-overlay" (click)="closeImage()">
+                    <img [src]="enlargedImageUrl" class="fullscreen-img" />
+                    <button class="close-overlay"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            }
+
+            <!-- Chat Input Area -->
+            <div class="chat-footer">
+                <div class="input-bar">
+                    <!-- Floating Action or Next Button -->
+                    @if (currentState === 'chatting') {
+                        <button class="action-pill warn" (click)="skipChat()" title="Skip Chat">
+                            <i class="fa-solid fa-forward"></i>
+                            <span class="btn-text">Skip</span>
+                        </button>
+                    }
+                    @if (currentState === 'ended') {
+                        <button class="action-pill primary" (click)="findNextUser()" title="New Chat">
+                            <i class="fa-solid fa-rotate"></i>
+                            <span class="btn-text">New Chat</span>
+                        </button>
+                    }
+
+                    <input type="text" class="main-input" placeholder="Type a message..." [formControl]="messageControl"
+                        (keyup)="onInputKey($event)" (keyup.enter)="sendMessage()" />
+
+                    <!-- Attachment Dropup -->
+                    <div class="attachment-wrapper">
+                        <button class="tool-btn" (click)="toggleAttachmentMenu()"
+                            [disabled]="currentState !== 'chatting'">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                        @if (showAttachmentMenu) {
+                            <div class="dropup-menu">
+                                <button (click)="imageInput.click()">
+                                    <i class="fa-regular fa-image"></i> Picture
+                                </button>
+                            </div>
+                        }
+                    </div>
+
+                    <button class="tool-btn record-btn" [ngClass]="{'recording': isRecording}"
+                        (click)="toggleRecording()" [disabled]="currentState !== 'chatting'">
+                        <i class="fa-solid" [ngClass]="isRecording ? 'fa-stop' : 'fa-microphone'"></i>
+                    </button>
+
+                    <button class="tool-btn send-btn" (click)="sendMessage()"
+                        [disabled]="!messageControl.value && !isRecording">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+
+                </div>
+            </div>
+        </div>
+        <input type="file" #imageInput accept="image/*" hidden (change)="onImageSelected($event)">
+    </div>
+
+    @if (showConfirm) {
+        <app-confirmation-popup [title]="'End Chat?'" [message]="'Do you really want to leave this conversation?'"
+            (confirmed)="handleConfirm($event)">
+        </app-confirmation-popup>
+    }
+</div>
