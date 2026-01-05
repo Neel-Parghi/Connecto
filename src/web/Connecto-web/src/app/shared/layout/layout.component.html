@@ -4,9 +4,11 @@
   <router-outlet></router-outlet>
 </div>
 
-<footer class="public-footer" @if(showFooter)>
+@if (showFooter) {
+<footer class="public-footer">
   <p>© 2026 Connecto. All rights reserved.</p>
   <div>
     <span>Developed by <a href="https://www.linkedin.com/in/neel-parghi/" target="_blank">Neel Parghi</a></span>
   </div>
 </footer>
+}

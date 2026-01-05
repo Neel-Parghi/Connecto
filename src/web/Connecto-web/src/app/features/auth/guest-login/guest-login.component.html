@@ -1,0 +1,23 @@
+<div class="page-container">
+    <!-- Left slogan panel -->
+    <div class="left-panel">
+        <h1>
+            Connect <br />
+            With <br />
+            Random <br />
+            Strangers
+        </h1>
+    </div>
+
+    <!-- Right form panel -->
+    <div class="right-panel">
+        <div class="form-container">
+            <h3>Username</h3>
+            <form [formGroup]="form" (ngSubmit)="startChat()">
+                <input type="text" formControlName="username" placeholder="Enter your username" aria-label="Username"
+                    [ngClass]="{'error': form.get('username')?.invalid && (form.get('username')?.touched || form.get('username')?.dirty)}" />
+                <button type="submit" [disabled]="form.invalid">Chat</button>
+            </form>
+        </div>
+    </div>
+</div>
