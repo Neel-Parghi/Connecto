@@ -1,1 +1,233 @@
-/* You can add global styles to this file, and also import other style files */
+@import "ngx-toastr/toastr";
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Righteous&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom font */
+.font-connecto {
+  font-family: "Roboto", "Inter", sans-serif;
+}
+
+/* Smooth scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1e1b29;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #676767;
+  border-radius: 8px;
+}
+
+:root {
+  --color-primary: #6c5dd3;
+  /* --color-secondary: #1E1A2B; */
+  --color-secondary: rgb(12 42 75);
+
+  /* Layout Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+
+  /* Shadow */
+  --shadow-md: 0px 4px 12px rgba(0, 0, 0, 0.1);
+  --navbar-height: 60px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  font-family: "Inter", sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.text-muted {
+  color: var(--color-muted);
+}
+
+.shadow-md {
+  box-shadow: var(--shadow-md);
+}
+
+.rounded-md {
+  border-radius: var(--radius-md);
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary);
+  border-radius: var(--radius-md);
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-secondary);
+}
+
+.sidebar-space {
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+.button-black {
+  background-color: black;
+}
+
+.toast-top-right {
+  top: 70px;
+  right: 20px;
+}
+
+.toast-warning {
+  background-color: #d26607;
+  color: #000000;
+  font-weight: 400;
+  box-shadow: none !important;
+}
+
+.toast-success {
+  background-color: #28aa1c;
+  color: #040404;
+  font-weight: 400;
+  box-shadow: none !important;
+}
+
+.toast-info {
+  background-color: #2462aa;
+  color: #fff;
+  font-weight: 400;
+  box-shadow: none !important;
+}
+
+body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--navbar-height);
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+  background: rgba(5, 76, 123, 0.445);
+  font-family: "Righteous", cursive;
+  transition: all 0.3s ease;
+}
+
+.navbar-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+  padding: 0 24px;
+  background: #030507f3;
+  backdrop-filter: blur(10px);
+}
+
+.logo {
+  font-size: 18px;
+  color: #8c9c9b;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.logo:hover {
+  color: #fff;
+}
+
+/* Dark theme for guest screen */
+.navbar.dark-theme .logo,
+.navbar.dark-theme .nav-link {
+  color: #8c9c9b;
+}
+
+.navbar.dark-theme .nav-link:hover {
+  color: #e2e2e2;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.main-content::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* Footer */
+.public-footer {
+  text-align: center;
+  padding: 1rem;
+  background: #20232a;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.public-footer p {
+  margin: 0;
+}
+
+/* Responsive Navbar */
+@media (max-width: 768px) {
+  .navbar-content {
+    padding: 0 16px;
+  }
+
+  .logo {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-content {
+    padding: 0 12px;
+  }
+
+  .nav-link {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+}
