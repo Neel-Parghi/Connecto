@@ -45,3 +45,9 @@ button:last-child {
   background: #0000006e;
   color: white;
 }
+
+.dialog-box h2{
+  font: 400 2.812rem / 3.25rem Roboto, sans-serif;
+  letter-spacing: 0;
+  margin: 0 0 .5em;
+}
