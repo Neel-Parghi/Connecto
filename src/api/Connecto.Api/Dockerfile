@@ -1,10 +1,16 @@
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+COPY . .
+
+RUN dotnet restore Connecto.Api.csproj
+
+RUN dotnet publish Connecto.Api.csproj -c Release -o /app/publish
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 EXPOSE 10000
 
-COPY . .
-RUN dotnet restore
-RUN dotnet publish -c Release -o out
+COPY --from=build /app/publish .
 
-WORKDIR /app/out
 ENTRYPOINT ["dotnet", "Connecto.Api.dll"]
