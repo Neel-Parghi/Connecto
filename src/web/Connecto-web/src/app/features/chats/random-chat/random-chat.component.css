@@ -707,6 +707,7 @@
   color: white;
   outline: none;
   transition: all 0.3s;
+  width: 1vw;
 }
 
 .main-input:focus {
