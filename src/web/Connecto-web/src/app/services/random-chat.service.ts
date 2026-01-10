@@ -3,6 +3,7 @@ import * as signalR from '@microsoft/signalr';
 import { BehaviorSubject, Subject, shareReplay } from 'rxjs';
 import CryptoJS from 'crypto-js';
 import { v4 as uuidv4 } from 'uuid';
+import { ToastrService } from 'ngx-toastr';
 import { environment } from '../environments/environment.dev';
 import { ImagePayload } from '../models/image-payload';
 
@@ -55,7 +56,7 @@ export class RandomChatSignalRService implements OnDestroy {
 
   private guestName!: string;
 
-  constructor() {
+  constructor(private toastr: ToastrService) {
     this.buildHubConnection();
     this.registerHandlers();
   }
@@ -71,6 +72,14 @@ export class RandomChatSignalRService implements OnDestroy {
       })
       .withAutomaticReconnect([0, 2000, 5000, 10000])
       .build();
+
+    this.hubConnection.onreconnecting((error) => {
+      this.toastr.warning('Connection unstable, Reconnecting...', 'Network Issue');
+    });
+
+    this.hubConnection.onreconnected(async (connectionId) => {
+      this.toastr.success('Connection restored!', 'Success');
+    });
 
     setInterval(() => {
       if (this.hubConnection.state === signalR.HubConnectionState.Connected)
@@ -345,7 +354,6 @@ export class RandomChatSignalRService implements OnDestroy {
 
     try {
       await this.hubConnection.stop();
-      console.log('SignalR Connection stopped');
     } catch (err) {
       console.error('Error while stopping connection: ', err);
     } finally {

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HubConnection } from '@microsoft/signalr';
 import { BehaviorSubject } from 'rxjs';
+import { ToastrService } from 'ngx-toastr';
 
 type CallState = 'idle' | 'calling' | 'incoming' | 'in-call';
 
@@ -31,10 +32,11 @@ export class CallService {
   private pendingOffer: RTCSessionDescriptionInit | null = null;
   private pendingOfferFrom: string | null = null;
   private acceptPending = false;
+  private pendingCandidates: any[] = [];
 
-  constructor() { }
+  constructor(private toastr: ToastrService) { }
   private handlersRegistered = false;
-  
+
   init(hubConnection: HubConnection) {
     this.hubConnection = hubConnection;
     this.registerSignalRHandlers();
@@ -192,6 +194,17 @@ export class CallService {
 
   private async handleRemoteOfferReceived(offer: RTCSessionDescriptionInit, fromUserId: string) {
     try {
+      // Auto-renegotiate if we are already in a call
+      if (this.callState.value === 'in-call' && this.peerConnection) {
+        await this.peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await this.peerConnection.createAnswer();
+        await this.peerConnection.setLocalDescription(answer);
+        if (this.currentSessionId && this.currentUserId) {
+          await this.hubConnection.invoke('SendSignal', this.currentSessionId, this.currentUserId, 'answer', JSON.stringify(answer));
+        }
+        return;
+      }
+
       this.pendingOffer = offer;
       this.pendingOfferFrom = fromUserId ?? this.pendingOfferFrom ?? null;
       this.remoteUserId = fromUserId ?? this.remoteUserId;
@@ -216,6 +229,13 @@ export class CallService {
       await this.ensureLocalStreamAttached();
 
       await this.peerConnection!.setRemoteDescription(new RTCSessionDescription(this.pendingOffer));
+
+      if (this.pendingCandidates.length > 0) {
+        for (const candidate of this.pendingCandidates) {
+          await this.handleRemoteIceCandidate(candidate);
+        }
+        this.pendingCandidates = [];
+      }
 
       const answer = await this.peerConnection!.createAnswer();
       await this.peerConnection!.setLocalDescription(answer);
@@ -252,7 +272,7 @@ export class CallService {
   private async handleRemoteIceCandidate(candidateObj: any) {
     try {
       if (!this.peerConnection) {
-        console.warn('[CallService] Received ICE but no peerConnection exists');
+        this.pendingCandidates.push(candidateObj);
         return;
       }
 
@@ -312,11 +332,28 @@ export class CallService {
     this.peerConnection.onconnectionstatechange = () => {
       if (!this.peerConnection) return;
       const state = this.peerConnection.connectionState;
-      if (state === 'disconnected' || state === 'failed' || state === 'closed') {
+
+      if (state === 'failed') {
+        this.toastr.warning('Connection unstable, attempting to reconnect...', 'Weak Signal');
+        void this.attemptReconnect();
+      } else if (state === 'closed') {
         this.cleanup();
         this.callState.next('idle');
       }
     };
+  }
+
+  private async attemptReconnect() {
+    if (!this.peerConnection || !this.currentSessionId || !this.currentUserId) return;
+
+    try {
+      const offer = await this.peerConnection.createOffer({ iceRestart: true });
+      await this.peerConnection.setLocalDescription(offer);
+
+      await this.hubConnection.invoke('SendSignal', this.currentSessionId, this.currentUserId, 'offer', JSON.stringify(offer));
+    } catch (err) {
+      console.error('[CallService] ICE restart failed', err);
+    }
   }
 
   private async ensureLocalStreamAttached() {
@@ -372,6 +409,8 @@ export class CallService {
       this.clearPending();
     } catch (err) {
       console.warn('[CallService] cleanup error', err);
+    } finally {
+      this.pendingCandidates = [];
     }
   }
 
@@ -379,6 +418,7 @@ export class CallService {
     this.pendingOffer = null;
     this.pendingOfferFrom = null;
     this.acceptPending = false;
+    this.pendingCandidates = [];
   }
 
   get currentState() {
