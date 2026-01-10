@@ -327,6 +327,7 @@ namespace Connecto.Api.Services
 
             string userId = profile.UserId;
             string departingName = profile.GuestName;
+            bool isPhysicallyConnected = true;
 
             // remove this connection from user's connections
             if (UserConnectionMap.TryGetValue(userId, out var conns))
@@ -336,27 +337,45 @@ namespace Connecto.Api.Services
                     conns.Remove(connectionId);
                     if (conns.Count == 0)
                     {
-                        // no more live connections for this userId -> treat as full disconnect
-                        UserConnectionMap.TryRemove(userId, out _);
+                        isPhysicallyConnected = false;
+                    }
+                }
+            }
+            
+            if (!isPhysicallyConnected)
+            {
+                await Task.Delay(20000);
 
-                        // Remove from waiting/idle
-                        WaitingIndexTryRemove(userId);
-                        IdleIndexTryRemove(userId);
-                        RebuildWaitingQueueExcluding(userId);
+                if (UserConnectionMap.TryGetValue(userId, out var checkConns))
+                {
+                    lock (checkConns)
+                    {
+                        if (checkConns.Count > 0) isPhysicallyConnected = true;
+                    }
+                }
 
-                        // if user was in a session, notify partner and move them idle
-                        var session = ActiveSessions.FirstOrDefault(s => s.Value.user1 == userId || s.Value.user2 == userId);
-                        if (!session.Equals(default(KeyValuePair<string, (string user1, string user2)>)))
-                        {
-                            ActiveSessions.TryRemove(session.Key, out var users);
-                            string otherUserId = users.user1 == userId ? users.user2 : users.user1;
+                if (!isPhysicallyConnected)
+                {
+                    // no more live connections for this userId -> treat as full disconnect
+                    UserConnectionMap.TryRemove(userId, out _);
 
-                            // notify partner that this user disconnected
-                            SendToUser(otherUserId, "PartnerDisconnected", $"{departingName ?? "Partner"} left the chat.");
+                    // Remove from waiting/idle
+                    WaitingIndexTryRemove(userId);
+                    IdleIndexTryRemove(userId);
+                    RebuildWaitingQueueExcluding(userId);
 
-                            MoveToIdle(otherUserId);
-                            SessionKeys.TryRemove(session.Key, out _);
-                        }
+                    // if user was in a session, notify partner and move them idle
+                    var session = ActiveSessions.FirstOrDefault(s => s.Value.user1 == userId || s.Value.user2 == userId);
+                    if (!session.Equals(default(KeyValuePair<string, (string user1, string user2)>)))
+                    {
+                        ActiveSessions.TryRemove(session.Key, out var users);
+                        string otherUserId = users.user1 == userId ? users.user2 : users.user1;
+
+                        // notify partner that this user disconnected
+                        _ = SendToUser(otherUserId, "PartnerDisconnected", $"{departingName ?? "Partner"} left the chat.");
+
+                        MoveToIdle(otherUserId);
+                        SessionKeys.TryRemove(session.Key, out _);
                     }
                 }
             }
